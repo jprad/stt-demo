@@ -12,9 +12,9 @@ A flexible, configuration-based speech-to-text demonstration framework that supp
 
 ## Currently Supported Models
 
-- ✅ **Faster-Whisper** (OpenAI Whisper with CTranslate2)
-- 🔜 **NVIDIA Canary** (Coming soon)
-- 🔜 **Wav2Vec2** (Coming soon)
+- ✅ **Faster-Whisper** (OpenAI Whisper with CTranslate2) - Best for multilingual
+- ✅ **NVIDIA Canary** (NeMo Framework) - Best for accuracy
+- ✅ **Wav2Vec2** (HuggingFace Transformers) - Best for English real-time
 
 ## Requirements
 
@@ -45,16 +45,26 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Install CUDA dependencies (for GPU)
+### 4. Install model-specific dependencies
 
-Faster-Whisper requires CTranslate2 with CUDA support:
-
+**For Faster-Whisper (default):**
 ```bash
+# CUDA dependencies
 # For CUDA 12.x
 pip install ctranslate2
 
 # For CUDA 11.x
 pip install ctranslate2==3.24.0
+```
+
+**For NVIDIA Canary:**
+```bash
+pip install nemo_toolkit[asr]
+```
+
+**For Wav2Vec2:**
+```bash
+pip install transformers torch torchaudio
 ```
 
 ### 5. Install PyAudio (for microphone support)
@@ -141,15 +151,25 @@ python src/demo.py --config path/to/custom_config.yaml
 To switch between models, simply edit `config/config.yaml`:
 
 ```yaml
-# Use Faster-Whisper
+# Use Faster-Whisper (multilingual, balanced)
 active_model: faster_whisper
 
-# Or switch to another model (when implemented)
+# Or switch to NVIDIA Canary (best accuracy)
 # active_model: nemo_canary
+
+# Or switch to Wav2Vec2 (fast English)
 # active_model: wav2vec2
 ```
 
 No code changes required!
+
+### Model Comparison
+
+| Model | Memory | Speed | Accuracy | Languages | Best For |
+|-------|--------|-------|----------|-----------|----------|
+| **Faster-Whisper** | 1-5GB | Medium | Excellent | 99 | Multilingual, balanced |
+| **Canary** | ~6GB | Fast | Best | Multilingual | Highest accuracy |
+| **Wav2Vec2** | 2-4GB | Fastest | Good | English | Real-time English |
 
 ## Project Structure
 
@@ -160,7 +180,9 @@ stt-demo/
 ├── src/
 │   ├── models/
 │   │   ├── base_model.py     # Abstract base class for models
-│   │   └── faster_whisper_model.py  # Faster-Whisper implementation
+│   │   ├── faster_whisper_model.py  # Faster-Whisper implementation
+│   │   ├── canary_model.py   # NVIDIA Canary implementation
+│   │   └── wav2vec2_model.py # Wav2Vec2 implementation
 │   ├── input_handlers/
 │   │   ├── file_handler.py   # File input handler
 │   │   └── microphone_handler.py  # Microphone input handler
@@ -202,21 +224,48 @@ class MyNewModel(BaseSTTModel):
 
 ### For 8GB GPU:
 
-- Use `model_size: base` or `small` for Faster-Whisper
+**Faster-Whisper:**
+- Use `model_size: base` or `small`
 - Set `compute_type: int8` for reduced memory usage
 - Enable VAD (Voice Activity Detection) to skip silence
 
+**Canary:**
+- Default `nvidia/canary-1b` fits well in 8GB
+- Uses ~6GB VRAM
+
+**Wav2Vec2:**
+- Very memory efficient (2-4GB)
+- Use `facebook/wav2vec2-base-960h` for even smaller footprint
+
 ### For Better Accuracy:
 
+**Faster-Whisper:**
 - Use `model_size: medium` or `large-v2` (if memory allows)
 - Set `compute_type: float16`
 - Increase `beam_size` (at the cost of speed)
 
+**Canary:**
+- Already state-of-the-art
+- Enable punctuation: `pnc: yes`
+
+**Wav2Vec2:**
+- Use `facebook/wav2vec2-large-960h-lv60-self` (recommended)
+- Best for clean English audio
+
 ### For Real-time Performance:
 
+**Faster-Whisper:**
 - Use smaller models (`tiny` or `base`)
 - Reduce `chunk_duration` in config
 - Disable VAD if experiencing delays
+
+**Canary:**
+- Fast by default
+- Good balance of speed and accuracy
+
+**Wav2Vec2:**
+- Fastest option overall
+- Ideal for real-time English transcription
 
 ## Troubleshooting
 

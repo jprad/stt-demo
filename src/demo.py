@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional
 import yaml
 
-from models import FasterWhisperModel
+from models import FasterWhisperModel, CanaryModel, Wav2Vec2Model
 from input_handlers import FileHandler, MicrophoneHandler
 
 # Configure logging
@@ -69,11 +69,9 @@ class STTDemo:
         if active_model == 'faster_whisper':
             self.model = FasterWhisperModel(model_config)
         elif active_model == 'nemo_canary':
-            logger.error("NeMo Canary model not yet implemented")
-            sys.exit(1)
+            self.model = CanaryModel(model_config)
         elif active_model == 'wav2vec2':
-            logger.error("Wav2Vec2 model not yet implemented")
-            sys.exit(1)
+            self.model = Wav2Vec2Model(model_config)
         else:
             logger.error(f"Unknown model: {active_model}")
             sys.exit(1)

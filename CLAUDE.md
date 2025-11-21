@@ -36,7 +36,9 @@ stt-demo/
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── base_model.py              # Abstract base class for STT models
-│   │   └── faster_whisper_model.py    # Faster-Whisper implementation
+│   │   ├── faster_whisper_model.py    # Faster-Whisper implementation
+│   │   ├── canary_model.py            # NVIDIA Canary implementation
+│   │   └── wav2vec2_model.py          # Wav2Vec2 implementation
 │   └── input_handlers/
 │       ├── __init__.py
 │       ├── file_handler.py            # Audio file input handler
@@ -308,15 +310,19 @@ pip install -r requirements.txt
 ### Current Status
 - ✅ Core framework implemented with plugin architecture
 - ✅ Faster-Whisper integration complete
+- ✅ NVIDIA Canary integration complete
+- ✅ Wav2Vec2 integration complete
 - ✅ File and microphone input handlers implemented
 - ✅ Configuration-based model switching system
-- 🔄 Ready for additional model integrations
 - Development branch: `claude/claude-md-mi86ooj52xk1yo4d-014xypTGDKhP4FXE5R7djLSA`
 
 ### Technology Stack
 - **Language**: Python 3.8+
-- **STT Engine**: Faster-Whisper (CTranslate2-based)
-- **Audio Processing**: NumPy, PyAudio
+- **STT Engines**:
+  - Faster-Whisper (CTranslate2-based)
+  - NVIDIA Canary (NeMo Framework)
+  - Wav2Vec2 (HuggingFace Transformers)
+- **Audio Processing**: NumPy, PyAudio, LibROSA, SoundFile
 - **Configuration**: PyYAML
 - **GPU Support**: CUDA 11.x/12.x
 - **Target Hardware**: 8GB GPU (NVIDIA)
@@ -374,12 +380,28 @@ models:
     # ... other params
 ```
 
-3. **Register in demo.py** (line ~55 in `_initialize_model()`):
+3. **Register in demo.py** (line ~70 in `_initialize_model()`):
 ```python
 elif active_model == 'your_new_model':
     from models.your_new_model import YourNewModel
     self.model = YourNewModel(model_config)
 ```
+
+### Model-Specific Implementation Notes
+
+**NVIDIA Canary:**
+- Requires NeMo framework: `pip install nemo_toolkit[asr]`
+- Uses special prompt format: `"source_lang target_lang task pnc"`
+- Example: `"en en asr yes"` for English transcription with punctuation
+- Supports translation: set `task: ast` to translate to English
+- Works with temporary files for real-time audio
+
+**Wav2Vec2:**
+- Requires Transformers: `pip install transformers torch torchaudio`
+- Expects 16kHz audio (automatic resampling included)
+- Uses processor for audio preprocessing and text decoding
+- Primarily English-only (most pretrained models)
+- Very fast inference with CTC (Connectionist Temporal Classification)
 
 ### Performance Optimization Tips
 
@@ -440,6 +462,18 @@ elif active_model == 'your_new_model':
 - Implements Faster-Whisper with CTranslate2
 - Configurable model size, device, compute type
 - Supports VAD filtering and beam search
+
+**CanaryModel** (`src/models/canary_model.py`):
+- Implements NVIDIA Canary with NeMo framework
+- State-of-the-art accuracy
+- Supports both transcription and translation
+- ~6GB VRAM usage
+
+**Wav2Vec2Model** (`src/models/wav2vec2_model.py`):
+- Implements Wav2Vec2 with HuggingFace Transformers
+- Fast and memory-efficient (2-4GB)
+- Best for English real-time transcription
+- Automatic resampling to 16kHz
 
 **FileHandler** (`src/input_handlers/file_handler.py`):
 - Validates audio file formats
